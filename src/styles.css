@@ -1,0 +1,112 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap");
+
+@theme inline {
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-cream: var(--cream);
+  --color-leather: var(--leather);
+  --color-mist: var(--mist);
+  --color-ink: var(--ink);
+  --color-oxblood: var(--oxblood);
+  --font-display: "Cormorant Garamond", "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+:root {
+  /* PREMIUM PALETTE — "Atelier Noir"
+     Obsidian (deep teal-black) · Bone (warm ivory) · Smoke (cool mist)
+     Burnished Copper (signature warm metal) · Oxblood (rare accent) */
+  --ink: oklch(0.16 0.018 195);          /* deep blackened jade */
+  --cream: oklch(0.94 0.018 88);         /* champagne ivory */
+  --mist: oklch(0.84 0.012 200);         /* cool smoke */
+  --leather: oklch(0.66 0.13 52);        /* burnished copper */
+  --oxblood: oklch(0.38 0.14 22);        /* rare accent */
+  --black: oklch(0.10 0.008 200);
+
+  --radius: 2px;
+  --background: var(--cream);
+  --foreground: var(--ink);
+  --card: oklch(0.96 0.014 85);
+  --card-foreground: var(--ink);
+  --popover: var(--cream);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--cream);
+  --secondary: var(--mist);
+  --secondary-foreground: var(--ink);
+  --muted: oklch(0.89 0.012 195);
+  --muted-foreground: oklch(0.40 0.018 200);
+  --accent: var(--leather);
+  --accent-foreground: var(--cream);
+  --destructive: oklch(0.50 0.20 25);
+  --destructive-foreground: var(--cream);
+  --border: oklch(0.80 0.012 195);
+  --input: oklch(0.86 0.012 195);
+  --ring: var(--leather);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "ss02";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--leather); color: var(--cream); }
+  h1,h2,h3,h4 { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
+}
+
+/* Custom cursor — desktop only, always visible via inverted blend */
+@media (hover: hover) and (pointer: fine) {
+  body { cursor: none; }
+  body * { cursor: none !important; }
+}
+
+/* Film grain overlay */
+.grain-layer::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  filter: url(#nv-grain);
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+
+/* Vertical text utility */
+.vert-text { writing-mode: vertical-rl; transform: rotate(180deg); }
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }

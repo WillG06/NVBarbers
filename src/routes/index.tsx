@@ -73,8 +73,8 @@ function Hero() {
               transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
               className="font-display text-[18vw] md:text-[10.5vw] leading-[0.88] tracking-tight"
             >
-              The art<br />
-              <span className="italic" style={{ color: "var(--leather)" }}>of the</span> chair.
+              
+              NV<span className="italic" style={{ color: "var(--leather)" }}>Barbers</span>
             </motion.h1>
           </div>
           <motion.div

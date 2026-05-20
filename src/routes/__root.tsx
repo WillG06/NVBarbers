@@ -4,11 +4,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
-  HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
 
-import appCss from "../styles.css?url";
+// HeadContent and Scripts are removed — index.html owns the document shell.
+// TanStack Router's head() still works for per-route <title> and <meta> updates;
+// the router patches document.head directly in CSR mode without needing HeadContent.
 
 function NotFoundComponent() {
   return (
@@ -42,8 +42,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           <button
             onClick={() => { router.invalidate(); reset(); }}
             className="border border-foreground px-5 py-2.5 text-[12px] uppercase tracking-[0.2em] hover:bg-foreground hover:text-background transition-colors"
-          >Try again</button>
-          <a href="/" className="px-5 py-2.5 text-[12px] uppercase tracking-[0.2em] underline underline-offset-4">Home</a>
+          >
+            Try again
+          </button>
+          <a href="/" className="px-5 py-2.5 text-[12px] uppercase tracking-[0.2em] underline underline-offset-4">
+            Home
+          </a>
         </div>
       </div>
     </div>
@@ -51,62 +55,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // head() still runs on every route — the router patches document.title
+  // and meta tags into the existing <head> from index.html.
   head: () => ({
     meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NV Barbers — Modern Barbering House, Nottingham" },
-      { name: "description", content: "A modern barbering house in Nottingham. Signature cuts, traditional hot shaves, and discreet hair restoration. By appointment." },
-      { name: "author", content: "NV Barbers" },
       { name: "theme-color", content: "#1B0A02" },
-      { property: "og:title", content: "NV Barbers — Nottingham" },
-      { property: "og:description", content: "Modern barbering. Traditional craft. Hockley, Nottingham." },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "NV Barbers" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [{ rel: "stylesheet", href: appCss }, { rel: "icon", href: "/favicon.ico" }],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "HairSalon",
-          name: "NV Barbers",
-          image: "/og.jpg",
-          "@id": "https://nvbarbers.co.uk",
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: "14 Goose Gate, Hockley",
-            addressLocality: "Nottingham",
-            postalCode: "NG1 1FF",
-            addressCountry: "GB",
-          },
-          priceRange: "££",
-          openingHours: "Tu-Sa 09:00-18:00",
-        }),
-      },
     ],
   }),
-  shellComponent: RootShell,
+  // shellComponent removed — index.html is the shell.
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();

@@ -1,0 +1,9 @@
+{
+  "name": "NV Barbers",
+  "short_name": "NV Barbers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080e0e",
+  "theme_color": "#080e0e",
+  "icons": []
+}

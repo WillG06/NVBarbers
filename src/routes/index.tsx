@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AnimatePresence, motion, useScroll, useTransform, type MotionValue } from "framer-motion";
+import { AnimatePresence, motion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { SiteLayout } from "@/components/site/Layout";
 import { RevealSection, Reveal } from "@/components/site/Section";
@@ -124,76 +124,128 @@ function Hero() {
  *  - Card height capped at 72vh with py-16 padding on wrapper → never touches top/bottom edges
  */
 
+/* ─────────────────────────────────────────────────────────────
+   Drop-in replacement for GalleryStatement + GalleryCard
+   in index.tsx.
+
+   Changes:
+   1. useSpring wraps raw scrollYProgress → buttery smooth follow
+   2. Multi-keyframe arrays simulate ease-in / ease-out curves
+      (Framer's useTransform is linear between stops, so we add
+       intermediate stops to fake a bezier)
+   3. z-index fixed: title z-10, cards z-20 (cards cover title)
+   4. Title gone by 4% scroll → never bleeds behind a card
+   5. Section 500vh → more breathing room between cards
+   6. Mobile card width 88vw instead of 58vw
+   7. Padding py-8 on mobile so card isn't crushed by nav
+
+   Add `useSpring` to your framer-motion import:
+   import { AnimatePresence, motion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
+─────────────────────────────────────────────────────────────── */
+
 function GalleryStatement() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
 
-  // Title fully gone by 3% — well before card 1 begins at 7%
-  const titleOpacity = useTransform(scrollYProgress, [0, 0.015, 0.03], [1, 0.2, 0]);
-  const titleY       = useTransform(scrollYProgress, [0, 0.03], [0, -24]);
+  const { scrollYProgress: rawProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end end"],
+  });
 
-  // Luxury rhythm on 420vh total:
-  //   entry  8% ≈ 34vh  — decisive, not sluggish
-  //   hold  20% ≈ 84vh  — lingers with confidence
-  //   exit   8% ≈ 34vh  — clean departure
-  //
-  //   card 1: rises 07–15%, holds 15–35%, exits 35–43%
-  //   card 2: rises 41–49%, holds 49–69%, exits 69–77%
-  //   card 3: rises 75–83%, holds 83–100%
+  /*
+   * useSpring turns the step-like raw scroll value into a
+   * continuously interpolated signal.  stiffness + damping are
+   * tuned so the animation follows your finger/wheel closely but
+   * with just enough lag to feel considered, not twitchy.
+   */
+  const scrollYProgress = useSpring(rawProgress, {
+    stiffness: 70,
+    damping: 24,
+    restDelta: 0.0005,
+  });
+
+  // ── Title: gone well before card 1 arrives (card 1 enters at 5%) ──
+  const titleOpacity = useTransform(scrollYProgress, [0, 0.02, 0.04], [1, 0.25, 0]);
+  const titleY       = useTransform(scrollYProgress, [0, 0.04],        [0, -28]);
+
+  /*
+   * Card timing over 500vh (progress 0 → 1):
+   *
+   *   Card 1  entry 05–14%   hold 14–37%   exit 37–47%
+   *   Card 2  entry 45–54%   hold 54–70%   exit 70–80%
+   *   Card 3  entry 78–87%   hold 87–100%
+   *
+   * Each entry/exit has 3 intermediate stops to fake ease-in-out:
+   *   entry  105% → 65% → 22% → 0%   (decelerates into rest)
+   *   exit     0% → -18% → -65% → -105%  (accelerates away)
+   */
   const card1Y = useTransform(
     scrollYProgress,
-    [0.07, 0.15, 0.35, 0.43],
-    ["100%", "0%", "0%", "-100%"],
+    [0.05, 0.08, 0.11, 0.14,   0.37, 0.40, 0.44, 0.47],
+    ["105%","65%","22%","0%",  "0%","-18%","-65%","-105%"],
   );
   const card2Y = useTransform(
     scrollYProgress,
-    [0.41, 0.49, 0.69, 0.77],
-    ["100%", "0%", "0%", "-100%"],
+    [0.45, 0.48, 0.51, 0.54,   0.70, 0.73, 0.77, 0.80],
+    ["105%","65%","22%","0%",  "0%","-18%","-65%","-105%"],
   );
   const card3Y = useTransform(
     scrollYProgress,
-    [0.75, 0.83, 1.00, 1.00],
-    ["100%", "0%", "0%", "0%"],
+    [0.78, 0.81, 0.84, 0.87,   1.00],
+    ["105%","65%","22%","0%",  "0%"],
   );
 
-  // Bg fades mid card-2 hold so colour bleeds in gradually
-  const bgOpacity = useTransform(scrollYProgress, [0.49, 0.72], [1, 0]);
-  const bgScale   = useTransform(scrollYProgress, [0, 1], [1.03, 1.10]);
+  // Pinned background fades as card 2 settles
+  const bgOpacity = useTransform(scrollYProgress, [0.46, 0.70], [1, 0]);
+  const bgScale   = useTransform(scrollYProgress, [0, 1],       [1.02, 1.07]);
 
   return (
-    <section ref={ref} className="relative" style={{ height: "420vh" }}>
+    <section ref={ref} className="relative" style={{ height: "500vh" }}>
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-foreground">
 
-        {/* Pinned bg — fades out while card 2 is on screen */}
-        <motion.div style={{ opacity: bgOpacity, scale: bgScale }} className="absolute inset-0">
+        {/* ── Pinned background ── */}
+        <motion.div
+          style={{ opacity: bgOpacity, scale: bgScale }}
+          className="absolute inset-0"
+        >
           <img src={chair} alt="" className="h-full w-full object-cover" />
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(180deg, rgba(8,14,14,0.45) 0%, rgba(8,14,14,0.80) 100%)" }}
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(8,14,14,0.45) 0%, rgba(8,14,14,0.82) 100%)",
+            }}
           />
         </motion.div>
 
-        {/* Opening headline — gone before first card arrives */}
+        {/* ── Opening headline ── z-10, behind cards (z-20) ── */}
         <motion.div
           style={{ opacity: titleOpacity, y: titleY }}
-          className="absolute inset-0 z-20 flex items-center pointer-events-none"
+          className="absolute inset-0 z-10 flex items-center pointer-events-none"
         >
           <div className="mx-auto max-w-[1600px] w-full px-6 md:px-12 grid grid-cols-12 gap-6 text-background">
             <div className="col-span-12 md:col-span-7">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-background/60">— No. 02 / Portfolio</p>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-background/60">
+                — No. 02 / Portfolio
+              </p>
               <h2 className="mt-6 font-display text-6xl md:text-[8.5vw] leading-[0.92]">
-                A quiet<br /><span className="italic" style={{ color: "var(--leather)" }}>archive</span> of work.
+                A quiet
+                <br />
+                <span className="italic" style={{ color: "var(--leather)" }}>
+                  archive
+                </span>{" "}
+                of work.
               </h2>
               <p className="mt-6 max-w-md text-background/75 leading-relaxed">
-                Cuts photographed in the chair, lit by the same window every time. No filters, no flattery — only the work. Scroll.
+                Cuts photographed in the chair, lit by the same window every
+                time. No filters, no flattery — only the work. Scroll.
               </p>
             </div>
           </div>
         </motion.div>
 
-        {/* Gallery cards — framed, narrower than viewport, centred with breathing room */}
-        <GalleryCard y={card1Y} src={tools} caption="Tools, end of day."              index="01" />
-        <GalleryCard y={card2Y} src={wall}  caption="The mirror at four o'clock."     index="02" />
+        {/* ── Gallery cards — z-20, render over the title ── */}
+        <GalleryCard y={card1Y} src={tools} caption="Tools, end of day."               index="01" />
+        <GalleryCard y={card2Y} src={wall}  caption="The mirror at four o'clock."      index="02" />
         <GalleryCard y={card3Y} src={tonic} caption="House tonic, slow morning light." index="03" cta />
       </div>
     </section>
@@ -214,40 +266,60 @@ function GalleryCard({
   cta?: boolean;
 }) {
   return (
-    // py-16 ensures the card never butts against the top or bottom edge
+    /*
+     * py-8 md:py-14 keeps the card clear of the nav on mobile
+     * and gives generous breathing room on desktop.
+     */
     <motion.div
       style={{ y }}
-      className="absolute inset-0 z-10 flex items-center justify-center py-16 will-change-transform"
+      className="absolute inset-0 z-20 flex items-center justify-center py-8 md:py-14 will-change-transform"
     >
       <div
         className="relative overflow-hidden"
         style={{
-          width:     "clamp(260px, 58vw, 820px)",
-          height:    "clamp(300px, 72vh, 840px)",   // 72vh + py-16 = always clear of edges
-          boxShadow: "0 48px 100px rgba(0,0,0,0.60), 0 8px 24px rgba(0,0,0,0.30)",
+          /*
+           * Mobile: 88vw feels immersive without edge-to-edge.
+           * Desktop: caps at 820px so it never overwhelms a wide screen.
+           * clamp(min, preferred, max)
+           */
+          width:     "clamp(300px, 88vw, 820px)",
+          height:    "clamp(320px, 70vh, 840px)",
+          boxShadow:
+            "0 60px 120px rgba(0,0,0,0.65), 0 10px 30px rgba(0,0,0,0.30)",
         }}
       >
-        <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" />
-
-        {/* Bottom gradient for caption */}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(180deg, transparent 45%, rgba(8,14,14,0.90) 100%)" }}
+        <img
+          src={src}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
         />
 
-        {/* Top-left index stamp */}
+        {/* Caption gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, transparent 40%, rgba(8,14,14,0.92) 100%)",
+          }}
+        />
+
+        {/* Index stamp */}
         <p className="absolute top-6 left-7 text-[11px] uppercase tracking-[0.30em] text-background/40">
           {index}
         </p>
 
-        {/* Caption block */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 text-background">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-background/55">— {index} / Archive</p>
-          <h3 className="mt-2 font-display text-3xl md:text-5xl leading-[0.95]">{caption}</h3>
+        {/* Caption */}
+        <div className="absolute bottom-0 left-0 right-0 p-7 md:p-12 text-background">
+          <p className="text-[10px] md:text-[11px] uppercase tracking-[0.28em] text-background/50">
+            — {index} / Archive
+          </p>
+          <h3 className="mt-2 font-display text-3xl md:text-5xl leading-[0.95]">
+            {caption}
+          </h3>
           {cta && (
             <Link
               to="/gallery"
-              className="mt-7 inline-flex items-center gap-3 border border-background/60 px-6 py-3 text-[12px] uppercase tracking-[0.22em] hover:bg-background hover:text-foreground transition-colors"
+              className="mt-6 inline-flex items-center gap-3 border border-background/60 px-6 py-3 text-[11px] uppercase tracking-[0.22em] hover:bg-background hover:text-foreground transition-colors"
             >
               Enter the gallery →
             </Link>
@@ -257,6 +329,8 @@ function GalleryCard({
     </motion.div>
   );
 }
+
+
 
 /* ---------- MENU PREVIEW ---------- */
 function MenuPreview() {

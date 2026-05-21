@@ -110,7 +110,7 @@ export function Nav() {
           height: "env(safe-area-inset-top)",
           background: scrolled
             ? "color-mix(in oklab, var(--foreground) 91%, transparent)"
-            : "rgba(8,14,14,0.52)",
+            : "rgb(8,14,14)",
           transition: "background 0.7s cubic-bezier(0.22,1,0.36,1)",
         }}
       />

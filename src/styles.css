@@ -75,7 +75,12 @@
   * {
     border-color: var(--color-border);
   }
-  html, body {
+  html {
+    background-color: var(--color-background);
+    padding-top: env(safe-area-inset-top);
+    scroll-behavior: smooth;
+  }
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);

@@ -56,7 +56,7 @@ function ReserveButton({ mobile = false }: { mobile?: boolean }) {
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen]         = useState(false);
+  const [open, setOpen] = useState(false);
   const [activeIndicator, setActiveIndicator] = useState<{ left: number; width: number } | null>(null);
   const navRef = useRef<HTMLElement>(null);
 
@@ -102,6 +102,18 @@ export function Nav() {
         transition: "background 0.7s cubic-bezier(0.22,1,0.36,1), backdrop-filter 0.7s ease, border-color 0.7s ease",
       }}
     >
+
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-0 right-0 top-0"
+        style={{
+          height: "env(safe-area-inset-top)",
+          background: scrolled
+            ? "color-mix(in oklab, var(--foreground) 91%, transparent)"
+            : "rgba(8,14,14,0.52)",
+          transition: "background 0.7s cubic-bezier(0.22,1,0.36,1)",
+        }}
+      />
       {/*
         Leather hairline — sits INSIDE the header at the boundary between
         the safe-area fill and the nav content, so it always aligns correctly
@@ -138,7 +150,7 @@ export function Nav() {
                 <Link
                   to={l.to}
                   onMouseEnter={(e) => {
-                    const rect    = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                     const navRect = navRef.current?.getBoundingClientRect();
                     if (navRect) setActiveIndicator({ left: rect.left - navRect.left, width: rect.width });
                   }}
@@ -169,7 +181,7 @@ export function Nav() {
           >
             <span className="flex flex-col justify-center gap-[5px] w-7" style={{ height: 20 }}>
               <span className="block h-px w-full" style={{ background: "rgba(255,255,255,0.85)", transition: "transform 0.45s cubic-bezier(0.22,1,0.36,1)", transform: open ? "rotate(45deg) translateY(5px)" : "none", transformOrigin: "center" }} />
-              <span className="block h-px"         style={{ background: "rgba(255,255,255,0.85)", width: open ? "100%" : "66%", opacity: open ? 0 : 1, transition: "opacity 0.3s ease, width 0.45s ease" }} />
+              <span className="block h-px" style={{ background: "rgba(255,255,255,0.85)", width: open ? "100%" : "66%", opacity: open ? 0 : 1, transition: "opacity 0.3s ease, width 0.45s ease" }} />
               <span className="block h-px w-full" style={{ background: "rgba(255,255,255,0.85)", transition: "transform 0.45s cubic-bezier(0.22,1,0.36,1)", transform: open ? "rotate(-45deg) translateY(-5px)" : "none", transformOrigin: "center" }} />
             </span>
           </button>

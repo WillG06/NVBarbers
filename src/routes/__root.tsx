@@ -6,6 +6,10 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 
+// HeadContent and Scripts are removed — index.html owns the document shell.
+// TanStack Router's head() still works for per-route <title> and <meta> updates;
+// the router patches document.head directly in CSR mode without needing HeadContent.
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -51,11 +55,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // head() still runs on every route — the router patches document.title
+  // and meta tags into the existing <head> from index.html.
   head: () => ({
     meta: [
       { name: "theme-color", content: "#1B0A02" },
     ],
   }),
+  // shellComponent removed — index.html is the shell.
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
@@ -65,9 +72,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <div style={{ paddingTop: "calc(env(safe-area-inset-top) + 72px)" }}>
-        <Outlet />
-      </div>
+      <Outlet />
     </QueryClientProvider>
   );
 }

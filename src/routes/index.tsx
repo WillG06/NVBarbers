@@ -143,6 +143,11 @@ function Hero() {
    import { AnimatePresence, motion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 ─────────────────────────────────────────────────────────────── */
 
+/* ─────────────────────────────────────────────────────────────
+   Paste these two functions into index.tsx, replacing the
+   existing GalleryStatement and GalleryCard.
+───────────────────────────────────────────────────────────── */
+
 function GalleryStatement() {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -151,113 +156,106 @@ function GalleryStatement() {
     offset: ["start start", "end end"],
   });
 
-  /*
-   * useSpring turns the step-like raw scroll value into a
-   * continuously interpolated signal.  stiffness + damping are
-   * tuned so the animation follows your finger/wheel closely but
-   * with just enough lag to feel considered, not twitchy.
-   */
   const scrollYProgress = useSpring(rawProgress, {
     stiffness: 70,
     damping: 24,
     restDelta: 0.0005,
   });
 
-  // ── Title: gone well before card 1 arrives (card 1 enters at 5%) ──
+  // Title gone by 4% — well before card 1 arrives at 5%
   const titleOpacity = useTransform(scrollYProgress, [0, 0.02, 0.04], [1, 0.25, 0]);
   const titleY       = useTransform(scrollYProgress, [0, 0.04],        [0, -28]);
 
   /*
-   * Card timing over 500vh (progress 0 → 1):
+   * Card timing over 520vh:
+   *   Card 1  enter 05–14%  hold 14–36%  exit 36–46%
+   *   Card 2  enter 44–53%  hold 53–69%  exit 69–79%
+   *   Card 3  enter 77–86%  hold 86–92%  exit 92–100%  ← exits at the end
    *
-   *   Card 1  entry 05–14%   hold 14–37%   exit 37–47%
-   *   Card 2  entry 45–54%   hold 54–70%   exit 70–80%
-   *   Card 3  entry 78–87%   hold 87–100%
-   *
-   * Each entry/exit has 3 intermediate stops to fake ease-in-out:
-   *   entry  105% → 65% → 22% → 0%   (decelerates into rest)
-   *   exit     0% → -18% → -65% → -105%  (accelerates away)
+   * Each entry/exit uses intermediate stops to fake ease-in / ease-out.
+   * Card 3 now exits before the section ends so the user isn't left
+   * sitting on a static screen with scroll momentum built up — the exit
+   * itself signals "done, move on" before they reach the boundary.
    */
   const card1Y = useTransform(
     scrollYProgress,
-    [0.05, 0.08, 0.11, 0.14,   0.37, 0.40, 0.44, 0.47],
+    [0.05, 0.08, 0.11, 0.14,   0.36, 0.39, 0.43, 0.46],
     ["105%","65%","22%","0%",  "0%","-18%","-65%","-105%"],
   );
   const card2Y = useTransform(
     scrollYProgress,
-    [0.45, 0.48, 0.51, 0.54,   0.70, 0.73, 0.77, 0.80],
+    [0.44, 0.47, 0.50, 0.53,   0.69, 0.72, 0.76, 0.79],
     ["105%","65%","22%","0%",  "0%","-18%","-65%","-105%"],
   );
+  // Card 3 entry + holds + gentle exit before section end
   const card3Y = useTransform(
     scrollYProgress,
-    [0.78, 0.81, 0.84, 0.87,   1.00],
-    ["105%","65%","22%","0%",  "0%"],
+    [0.77, 0.80, 0.83, 0.86,   0.92, 0.95, 0.98, 1.00],
+    ["105%","65%","22%","0%",  "0%","-14%","-55%","-105%"],
+  );
+  // Card 3 also fades during its exit so it feels deliberate, not abrupt
+  const card3Opacity = useTransform(
+    scrollYProgress,
+    [0.86, 0.92, 0.98],
+    [1,    1,    0],
   );
 
-  // Pinned background fades as card 2 settles
-  const bgOpacity = useTransform(scrollYProgress, [0.46, 0.70], [1, 0]);
+  const bgOpacity = useTransform(scrollYProgress, [0.44, 0.70], [1, 0]);
   const bgScale   = useTransform(scrollYProgress, [0, 1],       [1.02, 1.07]);
 
   return (
-    <section ref={ref} className="relative" style={{ height: "500vh" }}>
+    /*
+     * overscrollBehavior: "contain" — tells iOS not to let momentum scroll
+     * bleed past the boundary of this element into the next section.
+     * This prevents the "zoom past MenuPreview" problem on iPhone.
+     */
+    <section
+      ref={ref}
+      className="relative"
+      style={{ height: "520vh", overscrollBehavior: "contain" }}
+    >
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-foreground">
 
-        {/* ── Pinned background ── */}
-        <motion.div
-          style={{ opacity: bgOpacity, scale: bgScale }}
-          className="absolute inset-0"
-        >
+        {/* Pinned background */}
+        <motion.div style={{ opacity: bgOpacity, scale: bgScale }} className="absolute inset-0">
           <img src={chair} alt="" className="h-full w-full object-cover" />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(8,14,14,0.45) 0%, rgba(8,14,14,0.82) 100%)",
-            }}
-          />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(8,14,14,0.45) 0%, rgba(8,14,14,0.82) 100%)" }} />
         </motion.div>
 
-        {/* ── Opening headline ── z-10, behind cards (z-20) ── */}
+        {/* Title — z-10, behind cards (z-20) */}
         <motion.div
           style={{ opacity: titleOpacity, y: titleY }}
           className="absolute inset-0 z-10 flex items-center pointer-events-none"
         >
           <div className="mx-auto max-w-[1600px] w-full px-6 md:px-12 grid grid-cols-12 gap-6 text-background">
             <div className="col-span-12 md:col-span-7">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-background/60">
-                — No. 02 / Portfolio
-              </p>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-background/60">— No. 02 / Portfolio</p>
               <h2 className="mt-6 font-display text-6xl md:text-[8.5vw] leading-[0.92]">
-                A quiet
-                <br />
-                <span className="italic" style={{ color: "var(--leather)" }}>
-                  archive
-                </span>{" "}
-                of work.
+                A quiet<br />
+                <span className="italic" style={{ color: "var(--leather)" }}>archive</span> of work.
               </h2>
               <p className="mt-6 max-w-md text-background/75 leading-relaxed">
-                Cuts photographed in the chair, lit by the same window every
-                time. No filters, no flattery — only the work. Scroll.
+                Cuts photographed in the chair, lit by the same window every time. No filters, no flattery — only the work. Scroll.
               </p>
             </div>
           </div>
         </motion.div>
 
-        {/* ── Gallery cards — z-20, render over the title ── */}
+        {/* Cards — z-20 */}
         <GalleryCard y={card1Y} src={tools} caption="Tools, end of day."               index="01" />
         <GalleryCard y={card2Y} src={wall}  caption="The mirror at four o'clock."      index="02" />
-        <GalleryCard y={card3Y} src={tonic} caption="House tonic, slow morning light." index="03" cta />
+
+        {/* Card 3 gets its own wrapper so we can fade it during exit */}
+        <motion.div style={{ opacity: card3Opacity }} className="absolute inset-0 z-20">
+          <GalleryCard y={card3Y} src={tonic} caption="House tonic, slow morning light." index="03" cta />
+        </motion.div>
       </div>
     </section>
   );
 }
 
 function GalleryCard({
-  y,
-  src,
-  caption,
-  index,
-  cta,
+  y, src, caption, index, cta,
 }: {
   y: MotionValue<string>;
   src: string;
@@ -266,56 +264,29 @@ function GalleryCard({
   cta?: boolean;
 }) {
   return (
-    /*
-     * py-8 md:py-14 keeps the card clear of the nav on mobile
-     * and gives generous breathing room on desktop.
-     */
     <motion.div
       style={{ y }}
+      /*
+       * z-20 on cards 1 & 2.
+       * Card 3 inherits z-20 from its parent opacity wrapper.
+       * py-8 md:py-14 keeps cards clear of nav and bottom edge.
+       */
       className="absolute inset-0 z-20 flex items-center justify-center py-8 md:py-14 will-change-transform"
     >
       <div
         className="relative overflow-hidden"
         style={{
-          /*
-           * Mobile: 88vw feels immersive without edge-to-edge.
-           * Desktop: caps at 820px so it never overwhelms a wide screen.
-           * clamp(min, preferred, max)
-           */
           width:     "clamp(300px, 88vw, 820px)",
           height:    "clamp(320px, 70vh, 840px)",
-          boxShadow:
-            "0 60px 120px rgba(0,0,0,0.65), 0 10px 30px rgba(0,0,0,0.30)",
+          boxShadow: "0 60px 120px rgba(0,0,0,0.65), 0 10px 30px rgba(0,0,0,0.30)",
         }}
       >
-        <img
-          src={src}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-
-        {/* Caption gradient */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, transparent 40%, rgba(8,14,14,0.92) 100%)",
-          }}
-        />
-
-        {/* Index stamp */}
-        <p className="absolute top-6 left-7 text-[11px] uppercase tracking-[0.30em] text-background/40">
-          {index}
-        </p>
-
-        {/* Caption */}
+        <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 40%, rgba(8,14,14,0.92) 100%)" }} />
+        <p className="absolute top-6 left-7 text-[11px] uppercase tracking-[0.30em] text-background/40">{index}</p>
         <div className="absolute bottom-0 left-0 right-0 p-7 md:p-12 text-background">
-          <p className="text-[10px] md:text-[11px] uppercase tracking-[0.28em] text-background/50">
-            — {index} / Archive
-          </p>
-          <h3 className="mt-2 font-display text-3xl md:text-5xl leading-[0.95]">
-            {caption}
-          </h3>
+          <p className="text-[10px] md:text-[11px] uppercase tracking-[0.28em] text-background/50">— {index} / Archive</p>
+          <h3 className="mt-2 font-display text-3xl md:text-5xl leading-[0.95]">{caption}</h3>
           {cta && (
             <Link
               to="/gallery"

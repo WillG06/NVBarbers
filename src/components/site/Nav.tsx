@@ -120,7 +120,7 @@ export function Nav() {
       />
 
       {/* Nav row */}
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 md:px-12 py-4 md:py-[18px]">
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 md:px-12 py-5 md:py-[18px]">
 
         <Link to="/" className="relative z-10 flex items-center flex-shrink-0">
           <img
